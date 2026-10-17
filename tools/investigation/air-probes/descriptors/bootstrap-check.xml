@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/51.1">
+  <id>community.ddclassico.bootstrapcheck</id>
+  <versionNumber>0.1.0</versionNumber>
+  <filename>DDClassicoBootstrapCheck</filename>
+  <name>DDClassico Configuration Check</name>
+  <supportedProfiles>extendedDesktop</supportedProfiles>
+  <initialWindow>
+    <content>BootstrapCheck.swf</content>
+    <visible>true</visible>
+    <width>1000</width><height>600</height>
+    <renderMode>cpu</renderMode>
+  </initialWindow>
+</application>

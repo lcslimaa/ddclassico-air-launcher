@@ -1,0 +1,15 @@
+{
+  "name": "ddclassico-air-launcher",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:helper && npm run test:tools",
+    "test:helper": "npm --prefix apps/login-helper test",
+    "test:tools": "python3 -m unittest discover -s tests/tools -v && node --test tests/tools/*.cjs",
+    "build": "bash scripts/build-air.sh",
+    "start": "bash scripts/run-login-helper.sh",
+    "start:pilot": "bash scripts/run-layout-pilot.sh",
+    "check:docs": "python3 scripts/check-docs.py",
+    "check:shell": "bash scripts/check-shell.sh"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "assets": ".local/assets",
+  "evidence": ".local/evidence",
+  "runtime": ".local/runtime",
+  "cache": ".local/cache",
+  "captures": ".local/captures",
+  "build": "build/air"
+}

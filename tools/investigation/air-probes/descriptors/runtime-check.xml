@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/51.1">
+  <id>community.ddclassico.runtimecheck</id>
+  <versionNumber>0.1.0</versionNumber>
+  <filename>DDClassicoRuntimeCheck</filename>
+  <name>AIR Offline Runtime Check</name>
+  <supportedProfiles>extendedDesktop</supportedProfiles>
+  <initialWindow>
+    <content>RuntimeCheck.swf</content>
+    <visible>true</visible>
+    <width>800</width><height>400</height>
+    <renderMode>cpu</renderMode>
+  </initialWindow>
+</application>

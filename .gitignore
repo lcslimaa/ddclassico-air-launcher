@@ -1,0 +1,12 @@
+.local/
+build/
+**/node_modules/
+**/.generated/
+**/__pycache__/
+.DS_Store
+*.har
+*.swf
+*.log
+*.csv
+config/*.local.*
+*session*.json

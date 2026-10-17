@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/51.1">
+  <id>community.ddclassico.layoutpilot</id>
+  <versionNumber>0.1.0</versionNumber>
+  <filename>DDClassicoLayoutPilot</filename>
+  <name>DDClassico Layout Pilot</name>
+  <supportedProfiles>extendedDesktop</supportedProfiles>
+  <initialWindow>
+    <content>LayoutPilotLauncher.swf</content>
+    <visible>true</visible>
+    <width>1366</width><height>780</height>
+    <systemChrome>standard</systemChrome>
+    <resizable>true</resizable>
+    <renderMode>cpu</renderMode>
+  </initialWindow>
+</application>

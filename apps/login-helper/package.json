@@ -1,0 +1,15 @@
+{
+  "name": "ddclassico-login-helper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Official-site login and local AIR session handoff prototype",
+  "main": "src/main.js",
+  "scripts": {
+    "prestart": "node build-preload.js",
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.4.5"
+  }
+}

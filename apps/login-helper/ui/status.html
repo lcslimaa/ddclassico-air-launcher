@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+  <title>AIR login handoff</title>
+  <style>
+    body { background: #20242a; color: #eef1f5; font: 16px system-ui; margin: 24px; }
+    h1 { font-size: 24px; } p { color: #cbd3df; line-height: 1.5; }
+    #status { white-space: pre-wrap; font-size: 14px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <h1>DDClassico → AIR</h1>
+  <p>When the official login window opens, sign in and choose your server.
+    AIR starts automatically. Follow the status below if a game is already running.</p>
+  <pre id="status">Opening the official login…</pre>
+  <h2>Game memory</h2>
+  <p id="memory-values">Waiting for AIR samples…</p>
+  <canvas id="memory-chart" width="540" height="110" aria-label="AIR allocation and private-memory history"></canvas>
+  <p>Blue: AIR allocations · Amber: process private memory · Last 30 minutes</p>
+  <p id="memory-trend">Samples every 5 seconds. Keep this helper open.</p>
+  <h2>Game FPS</h2>
+  <p id="fps-values">Waiting for frame timing…</p>
+  <canvas id="fps-chart" width="540" height="110" aria-label="Measured frame rate and configured target over time"></canvas>
+  <p>Green: measured FPS · Gray: target · Background samples excluded from the measured line</p>
+</body>
+</html>
