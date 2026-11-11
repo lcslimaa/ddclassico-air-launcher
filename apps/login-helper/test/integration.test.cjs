@@ -58,6 +58,9 @@ test('main process blocks SWFs, rejects foreign IPC frames and launches only onc
     webRequest: {onBeforeRequest(_filter, handler) { requestHandler = handler; }}
   });
   const launched = [];
+  let handoffOptions;
+  const processSamples = [];
+  let processStops = 0;
   let disposals = 0;
   let quitting = 0;
   app.quit = () => quitting++;
@@ -73,12 +76,19 @@ test('main process blocks SWFs, rejects foreign IPC frames and launches only onc
       if (name === './capture') return capture;
       if (name === './air-lease') return require('../src/air-lease');
       if (name === './memory-monitor') return require('../src/memory-monitor');
-      if (name === './handoff') return {startHandoff: (value, options) => { launched.push(value); return {dispose() { disposals++; }}; }};
+      if (name === './process-monitor') return {createProcessMonitor: (_file, pid) => {
+        assert.equal(pid, 123);
+        return {sample: elapsed => processSamples.push(elapsed), stop: () => processStops++};
+      }};
+      if (name === './handoff') return {startHandoff: (value, options) => {
+        handoffOptions = options; launched.push(value);
+        return {child: {pid: 123}, dispose() { disposals++; }};
+      }};
       return require(name);
     }});
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(windows.length, 2);
-  const browser = windows[1];
+  assert.equal(windows.length, 1);
+  const browser = windows[0];
   assert.equal(browser.options.webPreferences.nodeIntegration, false);
   assert.equal(browser.options.webPreferences.contextIsolation, true);
   assert.equal(browser.options.webPreferences.sandbox, true);
@@ -97,7 +107,7 @@ test('main process blocks SWFs, rejects foreign IPC frames and launches only onc
     entryUrl: 'https://resource.ddclassico.com/flash/Loading.swf',
     parameters: {user: 'fake', key: secret, token: secret, rand: 'fake-random',
       config: 'https://s1.ddclassico.com/portugal/config.xml'}};
-  ipcMain.emit('ddclassico-launch-session', {sender: windows[0].webContents, senderFrame: windows[0].webContents.mainFrame}, value);
+  ipcMain.emit('ddclassico-launch-session', {sender: new Contents(), senderFrame: browser.webContents.mainFrame}, value);
   ipcMain.emit('ddclassico-launch-session', {sender: browser.webContents, senderFrame: {url: 'https://ddclassico.com'}}, value);
   assert.equal(launched.length, 0);
   const query = new URLSearchParams(value.parameters);
@@ -110,6 +120,8 @@ test('main process blocks SWFs, rejects foreign IPC frames and launches only onc
   assert.equal(cancelled, true);
   assert.equal(launched.length, 1);
   assert.ok(output.includes('Session captured from blocked startup request.'));
+  handoffOptions.memory('[AIR memory] elapsedMs=5000 allocatedBytes=100 freeBytes=10 privateBytes=200');
+  assert.deepEqual(processSamples, [5000]);
   const event = {sender: browser.webContents, senderFrame: browser.webContents.mainFrame};
   ipcMain.emit('ddclassico-launch-session', event, value);
   ipcMain.emit('ddclassico-launch-session', event, value);
@@ -118,6 +130,7 @@ test('main process blocks SWFs, rejects foreign IPC frames and launches only onc
   assert.ok(!fs.readFileSync(path.join(directory, 'private/login-helper.log'), 'utf8').includes(secret));
   helperProcess.emit('SIGINT');
   assert.equal(disposals, 1);
+  assert.equal(processStops, 1);
   assert.equal(quitting, 1);
 
   // Simulate a helper restarted while its accepted AIR process remains alive.
@@ -130,11 +143,12 @@ test('main process blocks SWFs, rejects foreign IPC frames and launches only onc
       if (name === './capture') return capture;
       if (name === './air-lease') return require('../src/air-lease');
       if (name === './memory-monitor') return require('../src/memory-monitor');
+      if (name === './process-monitor') return require('../src/process-monitor');
       if (name === './handoff') return {startHandoff: () => assert.fail('Active AIR must block launch.')};
       return require(name);
     }});
   await new Promise(resolve => setImmediate(resolve));
-  assert.equal(windows.length-before, 1); // Status panel only; no official login window.
+  assert.equal(windows.length-before, 0); // No auxiliary panel or duplicate login window.
   assert.ok(output.includes('An AIR game is still running. Close it, then restart the helper. Official login was not opened.'));
 });
 

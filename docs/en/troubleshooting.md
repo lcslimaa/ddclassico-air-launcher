@@ -14,6 +14,12 @@
 | Error 1065 | Missing class/definition; investigate module and context before creating a replacement |
 | Helper remains in terminal | Another helper window may still be open; AIR is a separate process |
 
+## Official-site network log
+
+The helper records HTTPS responses, failures, redirects and WSS handshakes to `ddclassico.com` and its subdomains in `.local/runtime/login-helper.log`. `[Network]` lines include method, sanitized route, resource type and status/error; redirects include status and a sanitized destination. For the first document, one line records only whether the User-Agent contains the standard Electron identifier and whether it contains a DDClassico product marker; the full value is not logged or changed. Route segments that resemble identifiers are hidden; parameter names may appear, but values are never logged. Response bodies, WebSocket frames, cookies and authentication headers are not collected. Logging stops after 400 events per run.
+
+To diagnose a site rejection, close and reopen the helper, reproduce the message, then inspect `[Network]` lines around that time. Share only those lines after checking that the route contains no personal data. Do not share the browser profile or the entire `.local/runtime` directory.
+
 Error 1065 appeared in different contexts during investigation; no universal fix is established. A specific missing class requires module/resource analysis, not an empty replacement class.
 
 ## Historical tools

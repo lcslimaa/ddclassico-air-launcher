@@ -136,6 +136,11 @@ test('helper disposal stops an unacknowledged child and ignores a late acknowled
 });
 
 test('safe diagnostic filter drops raw game output and oversized traces', t => {
+  assert.equal(safeDiagnostic('[Test marker] invite-sent at 12345ms'), '[Test marker] invite-sent at 12345ms');
+  assert.equal(safeDiagnostic('[Test marker] user=PRIVATE at 12345ms'), null);
+  const window = '[AIR window] elapsedMs=12345 mainActive=0 mainMinimized=0 mainClosed=0 gameActive=1 gameMinimized=0 gameClosed=0';
+  assert.equal(safeDiagnostic(window), window);
+  assert.equal(safeDiagnostic(window+' key=PRIVATE'), null);
   assert.equal(safeDiagnostic('[Session launcher] user='+secret), null);
   assert.equal(safeDiagnostic('[Startup stage] key-'+secret+' at 1ms'), null);
   assert.equal(safeDiagnostic('[Startup status] character-list HTTP 200'), '[Startup status] character-list HTTP 200');

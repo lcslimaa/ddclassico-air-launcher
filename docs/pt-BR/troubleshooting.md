@@ -14,6 +14,12 @@
 | Error 1065 | Classe/definição ausente; investigar módulo e contexto do erro antes de criar substituto |
 | Helper continua no terminal | Pode haver outra janela do helper aberta; jogo AIR é um processo separado |
 
+## Log de rede do site oficial
+
+O helper registra respostas, falhas, redirecionamentos HTTPS e o handshake WSS para `ddclassico.com` e subdomínios em `.local/runtime/login-helper.log`. Linhas `[Network]` incluem método, rota sanitizada, tipo de recurso e status/erro; redirecionamentos mostram o status e o destino sanitizado. Para o primeiro documento, uma linha registra apenas se o User-Agent contém o identificador padrão Electron e se contém um marcador de produto DDClássico; o valor completo não é gravado nem alterado. Segmentos de rota que parecem identificadores são ocultados; nomes de parâmetros podem aparecer, mas seus valores não são gravados. Corpos, frames WebSocket, cookies e cabeçalhos de autenticação não são coletados. O registro para após 400 eventos por execução.
+
+Para diagnosticar uma recusa no site, feche e reabra o helper, reproduza a mensagem e examine as linhas `[Network]` próximas ao horário. Compartilhe somente essas linhas após conferir que a rota não contém dados pessoais. Não compartilhe o perfil do navegador nem a pasta `.local/runtime` inteira.
+
 O erro 1065 apareceu em situações diferentes durante a investigação; não há uma correção universal comprovada. Um erro de classe específica deve ser analisado com seus módulos/recursos, sem substituir a classe por uma implementação vazia.
 
 ## Ferramentas históricas

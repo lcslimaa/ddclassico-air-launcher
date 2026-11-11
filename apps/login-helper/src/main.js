@@ -7,6 +7,8 @@ const { isOfficialPage, isStartupURL, validateSession, sessionFromStartupRequest
 const { startHandoff } = require('./handoff');
 const { AIRLeaseState } = require('./air-lease');
 const { createMemoryMonitor } = require('./memory-monitor');
+const { createProcessMonitor } = require('./process-monitor');
+const { installRequestLog } = require('./request-log');
 
 const project = require('./project-paths');
 const root = project.root;
@@ -23,20 +25,17 @@ app.setName('DDClassico AIR Login Helper');
 app.enableSandbox();
 
 let browser;
-let panel;
 let handoff;
 let captured = false;
 let memoryMonitor;
+let processMonitor;
 let quitting = false;
 const logPath = path.join(project.runtime, 'login-helper.log');
-const messages = [];
 function note(message) {
-  // All callers supply fixed labels or handoff.js-whitelisted diagnostics.
+  // Callers supply fixed labels, whitelisted diagnostics, or sanitized request metadata.
   const line = new Date().toISOString() + ' ' + message;
   try { fs.appendFileSync(logPath, line + '\n', {mode: 0o600}); } catch {}
   console.log(message);
-  messages.push(message); if (messages.length > 12) messages.shift();
-  if (panel && !panel.isDestroyed()) panel.webContents.send('helper-status', messages.slice());
 }
 function trusted(event) {
   return browser && !browser.isDestroyed() && event.sender === browser.webContents &&
@@ -53,18 +52,21 @@ function captureSession(value, source) {
   try {
     const sdk = process.env.DDCLASSICO_AIR_SDK || '';
     try {
-      memoryMonitor = createMemoryMonitor(project.runtime, value => {
-        if (panel && !panel.isDestroyed()) panel.webContents.send('helper-memory', value);
-      }, value => {
-        if (panel && !panel.isDestroyed()) panel.webContents.send('helper-fps', value);
-      });
+      memoryMonitor = createMemoryMonitor(project.runtime,
+        value => { if (value.latest) void processMonitor?.sample(value.latest.elapsedMs); });
     } catch { note('Memory monitor unavailable; game launch will continue.'); }
     handoff = startHandoff(validated, {adl: path.join(sdk, 'bin', 'adl'),
       layoutPilot: process.env.DDCLASSICO_LAYOUT_PILOT === '1',
       build: project.build, privateRoot: project.runtime, note,
-      memory: line => memoryMonitor?.receive(line), closed: () => memoryMonitor?.stop()});
+      memory: line => memoryMonitor?.receive(line), closed: () => { memoryMonitor?.stop(); processMonitor?.stop(); }});
+    if (memoryMonitor && handoff.child?.pid) {
+      try { processMonitor = createProcessMonitor(memoryMonitor.file.replace(/\.csv$/, '.process.csv'), handoff.child.pid,
+        {unavailable: () => note('AIR CPU recording stopped; process counters or local output unavailable.')}); }
+      catch { note('AIR CPU monitor unavailable; game launch will continue.'); }
+    }
   } catch (error) {
     memoryMonitor?.stop();
+    processMonitor?.stop();
     if (error.code === 'AIR_BUSY') note('An AIR game is still running. Close it, then restart the helper for a fresh launch.');
     else note('AIR handoff failed. Check the SDK, build and lifecycle marker, then restart the helper for a fresh launch.');
   }
@@ -106,6 +108,7 @@ else {
       {label: 'Window', submenu: [{role: 'minimize'}, {role: 'close'}]}
     ]));
     const loginSession = session.fromPartition('persist:official-login');
+    installRequestLog(loginSession.webRequest, note);
     loginSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
     loginSession.setPermissionCheckHandler(() => false);
     loginSession.on('will-download', event => { event.preventDefault(); note('Browser download blocked; sessions are handed directly to AIR.'); });
@@ -125,22 +128,16 @@ else {
         else note('Startup request is incomplete; waiting for embedding. Missing fields: ' + missingStartupFields(details.url).join(', ') + '.');
       } catch { note('Startup request parameters failed validation. Values omitted.'); }
     });
-    panel = new BrowserWindow({width: 620, height: 450, title: 'AIR login handoff',
-      webPreferences: {preload: path.join(__dirname, '../ui/status-preload.js'),
-        nodeIntegration: false, contextIsolation: true, sandbox: true}});
-    panel.loadFile(path.join(__dirname, '../ui/status.html'));
-    panel.webContents.on('did-finish-load', () => panel.webContents.send('helper-status', messages.slice()));
-    panel.webContents.setWindowOpenHandler(() => ({action: 'deny'}));
-    panel.webContents.on('will-navigate', event => event.preventDefault());
-    panel.on('closed', () => { panel = null; });
     note('[Helper lifecycle] Attempt started.');
     const existingAIR = AIRLeaseState(project.runtime);
     if (existingAIR === 'active') {
       note('An AIR game is still running. Close it, then restart the helper. Official login was not opened.');
+      app.quit();
       return;
     }
     if (existingAIR === 'invalid') {
       note('AIR lifecycle marker could not be verified. Official login was not opened; local diagnostics need review.');
+      app.quit();
       return;
     }
     browser = new BrowserWindow({width: 1200, height: 800, title: 'DDClassico official login',
@@ -166,9 +163,9 @@ else {
     note('Keep this login browser open while testing AIR. Restart the helper for each new attempt.');
     browser.loadURL('https://ddclassico.com/classic/launcher').catch(() => note('Official website navigation failed.'));
   }).catch(() => { note('Login helper failed to initialize.'); app.quit(); });
-  app.on('before-quit', () => { quitting = true; memoryMonitor?.stop(); handoff?.dispose(); });
+  app.on('before-quit', () => { quitting = true; memoryMonitor?.stop(); processMonitor?.stop(); handoff?.dispose(); });
   for (const signal of ['SIGINT', 'SIGTERM']) {
-    process.once(signal, () => { memoryMonitor?.stop(); handoff?.dispose(); app.quit(); });
+    process.once(signal, () => { memoryMonitor?.stop(); processMonitor?.stop(); handoff?.dispose(); app.quit(); });
   }
   app.on('window-all-closed', () => app.quit());
 }

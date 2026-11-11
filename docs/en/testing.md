@@ -26,3 +26,21 @@ Build requires local resources; tests must not require an account or recovered g
 7. Verify memory/FPS CSVs with helper open and absence of retired instance recording.
 
 Keep validation states separate: compiled, automated pass, user-reported local observation, and not tested. HTTP 200, completed SWF loading and ACK do not establish authentication. ADL has failed in this agent environment during Launch Services initialization before application startup; report this limitation rather than replacing it with logic-test success.
+
+## Lobby FPS diagnostics
+
+Restart both the helper and AIR to load the updated build. Keep the helper open while recording. With the game window focused, press the corresponding key just after each action (use Fn on Mac if needed):
+
+| Key | Manual marker |
+|---|---|
+| F6 | Baseline, alone in the lobby |
+| F7 | Invitation sent |
+| F8 | Player joined |
+| F9 | Player left |
+| F10 | You left the lobby |
+
+Allow approximately 15 seconds between steps when possible. Markers are user annotations, not automatic detection of server events. Repeat with another lobby for comparison.
+
+`.local/runtime/login-helper.log` records markers and window state (activation, minimization and closing, also sampled every 5 seconds). Files in `.local/runtime/memory/` share a per-run prefix: `.csv` for AIR memory, `.fps.csv` for FPS and `.process.csv` for AIR process CPU and resident memory. `elapsed_ms` aligns metrics with the AIR clock; `utc_ms` timestamps process collection. CPU is calculated from differences in cumulative process CPU time between readings: 100% means one fully occupied core and values can exceed 100%. The first reading establishes the baseline without a CPU row. Collection uses `ps` on macOS and excludes process arguments, player names and session parameters.
+
+These metrics distinguish CPU increases, window changes and FPS drops; they do not attribute time to functions or measure GPU usage. An execution profile is still needed to identify expensive functions. Collection failures are logged without interrupting the game.

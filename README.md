@@ -21,4 +21,4 @@ npm run start:pilot
 
 O build depende de recursos privados locais. Consulte o guia de build antes de executar em um clone limpo. Windows ainda não é suportado/testado. O novo checkout exige validação manual; compilar não comprova login nem jogabilidade.
 
-Sem remoto e sem licença escolhida nesta etapa. Nada foi publicado.
+Repositório privado no GitHub; ainda sem licença definida. O build depende de recursos privados locais.

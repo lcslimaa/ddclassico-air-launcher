@@ -1,6 +1,7 @@
 package {
     import flash.desktop.NativeApplication;
     import flash.display.Loader;
+    import flash.display.NativeWindow;
     import flash.display.Sprite;
     import flash.display.StageAlign;
     import flash.display.StageScaleMode;
@@ -55,6 +56,9 @@ package {
         private var pilot:Boolean;
         private var shell:LauncherShell;
         private var gameStage:Stage;
+        private var mainWindow:NativeWindow;
+        private var gameWindow:NativeWindow;
+        private var lastMarker:int = -1000;
 
         public function SessionLauncher(layoutPilot:Boolean = false) {
             pilot = layoutPilot;
@@ -74,6 +78,10 @@ package {
                 addChild(shell); gameStage = shell.gameStage;
                 gameStage.addChild(game); shell.showGame();
             } else addChild(game);
+            mainWindow = stage.nativeWindow;
+            gameWindow = gameStage.nativeWindow;
+            watchWindow(mainWindow);
+            if (gameWindow != mainWindow) watchWindow(gameWindow);
             if (!pilot) {
             stage.addChild(panel);
             panel.graphics.beginFill(0x20242a, 0.95);
@@ -93,6 +101,9 @@ package {
             if (pilot) game.contentLoaderInfo.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, uncaught);
             if (pilot) game.contentLoaderInfo.addEventListener(Event.INIT, resetGameScaling);
             var shortcuts:Function = function(event:Object):void {
+                if (event.keyCode >= 117 && event.keyCode <= 121) {
+                    markTest(int(event.keyCode)-117);
+                }
                 if (event.keyCode == 113) { if (pilot) shell.toggleDiagnostics(); else panel.visible = !panel.visible; }
                 if (event.keyCode == 114) fpsHud.visible = !fpsHud.visible;
                 if (event.keyCode == 115) showMatchPanel();
@@ -132,8 +143,38 @@ package {
                 Math.round(System.totalMemoryNumber) + " freeBytes=" + Math.round(System.freeMemory) +
                 " privateBytes=" + Math.round(System.privateMemory));
             sampleFPS();
+            sampleWindows();
+        }
+        private function windowsOpen():Boolean {
+            return mainWindow && gameWindow && !mainWindow.closed && !gameWindow.closed;
+        }
+        private function watchWindow(window:NativeWindow):void {
+            window.addEventListener(Event.ACTIVATE, sampleWindows);
+            window.addEventListener(Event.DEACTIVATE, sampleWindows);
+            window.addEventListener("displayStateChange", sampleWindows);
+            window.addEventListener(Event.CLOSE, sampleWindows);
+        }
+        private function windowFlags(window:NativeWindow, prefix:String):String {
+            var closed:Boolean = !window || window.closed;
+            return " " + prefix + "Active=" + (!closed && window.active ? 1 : 0) +
+                " " + prefix + "Minimized=" + (!closed && window.displayState == "minimized" ? 1 : 0) +
+                " " + prefix + "Closed=" + (closed ? 1 : 0);
+        }
+        private function sampleWindows(event:Event = null):void {
+            trace("[AIR window] elapsedMs=" + getTimer() + windowFlags(mainWindow, "main") + windowFlags(gameWindow, "game"));
+            if (!windowsOpen()) memoryTimer.stop();
+        }
+        private function markTest(index:int):void {
+            var now:int = getTimer();
+            if (now-lastMarker < 350) return;
+            lastMarker = now;
+            var labels:Array = ["baseline", "invite-sent", "player-joined", "player-left", "lobby-left"];
+            var label:String = labels[index];
+            trace("[Test marker] " + label + " at " + now + "ms");
+            note("Test marker: " + label);
         }
         private function frameTick(event:Event):void {
+            if (!windowsOpen()) return;
             if (pilot) resetGameScaling();
             var now:int = getTimer();
             if (pilot) focused = stage.nativeWindow.active || gameStage.nativeWindow.active;
@@ -164,6 +205,7 @@ package {
             fpsHud.y = panel.visible ? 243 : 8;
         }
         private function sampleFPS():void {
+            if (!windowsOpen()) return;
             var now:int = getTimer();
             var duration:int = now-fpsWindowStart;
             if (duration < 1000) return;

@@ -21,6 +21,8 @@ const STAGES = new Set(['config-request', 'config-parsed', 'character-list-reque
   'game-bootstrap-started', 'startup-resources-complete']);
 
 function safeDiagnostic(line) {
+  if (/^\[Test marker\] (?:baseline|invite-sent|player-joined|player-left|lobby-left) at \d{1,13}ms$/.test(line)) return line;
+  if (/^\[AIR window\] elapsedMs=\d{1,13} mainActive=[01] mainMinimized=[01] mainClosed=[01] gameActive=[01] gameMinimized=[01] gameClosed=[01]$/.test(line)) return line;
   if (line.startsWith('[Session launcher] ')) {
     const message = line.slice(19);
     if (LAUNCHER_MESSAGES.has(message) ||
